@@ -3,7 +3,7 @@
 */
 const { localStorage, sessionStorage, location } = window;
 const KEY = location.pathname;
-const getKEY = key => `${KEY}${key}`;
+const getKEY = (key, G) => G ? key : `${KEY}${key}`;
 
 class Storage {
     constructor(props) {
@@ -11,28 +11,36 @@ class Storage {
     }
     // 获取长度
     get longth() {
-        return this.storage.length;
+        let i = 0;
+        for (const key in this.storage) {
+            if (key.indexOf(KEY) === 0) i++;
+        }
+        return i;
     }
     // 获取
-    get(key) {
-        return JSON.parse(this.storage.getItem(getKEY(key)));
+    get(key, G = false) {
+        return JSON.parse(this.storage.getItem(getKEY(key, G)));
     }
     // 设置
-    set(key, val) {
-        this.storage.setItem(getKEY(key), JSON.stringify(val));
+    set(key, val, G = false) {
+        this.storage.setItem(getKEY(key, G), JSON.stringify(val));
     }
     // 删除项
-    remove(key) {
-        this.storage.removeItem(getKEY(key));
+    remove(key, G = false) {
+        this.storage.removeItem(getKEY(key, G));
     }
     // 清除全部
-    clear() {
-        for (const key in this.storage) {
-            if (key.indexOf(KEY) === 0) this.remove(key.replace(KEY,''));
+    clear(G = false) {
+        if (G) {
+            this.storage.clear();
+        } else {
+            for (const key in this.storage) {
+                if (key.indexOf(KEY) === 0) this.remove(key.replace(KEY, ''));
+            }
         }
     }
-    has(key) {
-        return this.storage.hasOwnProperty(getKEY(key));
+    has(key, G = false) {
+        return this.storage.hasOwnProperty(getKEY(key, G));
     }
 }
 

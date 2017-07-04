@@ -5,6 +5,7 @@ export default (() => {
     };
     // 平台、设备和操作系统
     let system = {
+        pc: false,
         win: false,
         mac: false,
         // 移动设备
@@ -52,6 +53,9 @@ export default (() => {
 
     if (ua.toLowerCase().match(/MicroMessenger/i) == 'micromessenger') {
         system.microMessenger = true;
+    }
+    if (!(system.ios || system.android || system.winMobile || system.nokiaN)) {
+        system.pc = true;
     }
     // 返回这些对象
     return {

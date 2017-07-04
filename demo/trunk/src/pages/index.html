@@ -9,19 +9,80 @@
 </head>
 <body>
 	
-	<div id="app-main"></div>
+	<div id="app-main">
+		<style>
+			html[data-dpr] .cup-main {
+				opacity: 0;
+			}
+			
+			.cup-main{
+				position: absolute;
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+				height: 3px;
+				top:0;
+				left: 0;
+				background: #4EFCFF;
+				width: 100%;
+				overflow: hidden;
+			}
+			.cup-main::after{
+				content: '';
+				background: linear-gradient(-90deg, #4EFCFF, #459EF2, #4EFCFF);
+				animation: fader 2s infinite linear;
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			@keyframes fader {
+				0% { 
+					transform: translateX(-100%);
+				}
+				100% {
+					transform: translateX(100%);
+				}
+			}
+		</style>
+		<div class="cup-main"></div>
+	</div>
 
 	<script src="./systemjs/system.js"></script>
 	<script>
-		SystemJS.config({
-			 meta: {
-				'*.js': {
-					format: 'global',
-					scriptload: true
+		var SystemJSConfigMain = <%= JSON.stringify(htmlWebpackPlugin.files.chunks) %>;
+		(function(){
+			var config = (function(){
+				var hash = '';
+				var r = {
+					meta: {
+						'*.js': {
+							format: 'global',
+							scriptload: true
+						}
+					},
+					map: {
+
+					}
+				};
+				for (var key in SystemJSConfigMain) {
+					var _item = SystemJSConfigMain[key];
+					var _key = '_' + key;
+					r.map[_key] = _item.entry + '?' + _item.hash;
+					hash += _item.hash;
+					r.meta[_key] = {
+						format: 'global',
+						scriptload: true
+					}
 				}
-			 }
-		});
-		SystemJS.import('<%= htmlWebpackPlugin.options.configJs %>');
+				return {
+					hash: hash,
+					r:r
+				};
+			})();
+			SystemJS.config(config.r);
+		
+			SystemJS.import('_config');
+		})();
 	</script>
 
 </body>

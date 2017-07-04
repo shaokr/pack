@@ -34,7 +34,8 @@ class WebpackGe {
             antd: 'antd',
             mobx: 'mobx',
             'mobx-react': 'mobxReact',
-            'mobx-react-devtools': 'mobxDevtools'
+            'mobx-react-devtools': 'mobxDevtools',
+            'mock': 'Mock'
         };
         this.resolve = {
             modules: [
@@ -101,7 +102,7 @@ const wkcf = {
             },
             {
                 test: /\.(jpe?g|png|gif|svg)$/i,
-                use: [`url-loader?limit=10000&name=${userConfig.dist.img}/[hash].[ext]`]
+                use: [`url-loader?limit=1&name=${userConfig.dist.img}/[hash].[ext]`]
             }
         ]
     },
@@ -151,7 +152,12 @@ const wkcfBuild = {
                 use: ExtractTextPlugin.extract({
                     fallback: 'style-loader',
                     use: [
-                        'css-loader',
+                        {
+                            loader: 'css-loader',
+                            options: {
+                                minimize: true //css压缩
+                            }
+                        },
                         {
                             loader: 'postcss-loader',
                             options: {
@@ -198,16 +204,16 @@ const wkcfBuild = {
  * 生成html
  */
 const oldHtmlMd5 = {};
-const generateHtml = (path, data={}) => {
+const generateHtml = (path, data={}, build) => {
     let lists = glob.sync(`${path }/${userConfig.src.html }/*.html`);
     // 过滤掉没有改变的html
-    lists = _.filter(lists, (item) => {
-        const htmlMd5 = md5File(item);
-        if (oldHtmlMd5[item] != htmlMd5) {
-            oldHtmlMd5[item] = htmlMd5;
-            return true;
-        }
-    });
+    // lists = _.filter(lists, (item) => {
+    //     const htmlMd5 = md5File(item);
+    //     if (oldHtmlMd5[item + build] != htmlMd5) {
+    //         oldHtmlMd5[item + build] = htmlMd5;
+    //         return true;
+    //     }
+    // });
 
     return lists.map((item) => {
         const name = item.split(userConfig.src.html)[1];
@@ -222,7 +228,7 @@ const generateHtml = (path, data={}) => {
                     removeComments: true,    // 移除HTML中的注释
                     collapseWhitespace: false    // 删除空白符与换行符
                 },
-                excludeChunks: ['config'],
+                // excludeChunks: ['config'],
                 
             }, data));
     });
@@ -281,7 +287,7 @@ const getPackPluginsBuild = ({ path, entry }) => {
             ...generateHtml(path, {
                 configJs: './config.min.js',
                 minName: '.min'
-            })
+            },true)
         ]
     });
     return _webpack;

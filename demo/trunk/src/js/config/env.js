@@ -10,8 +10,8 @@ const { location } = window;
  * 如果是应用内部本地调用去除 !location.host 的条件
  */
 const env = (() => {
-    let envmark = 1;
-    if (!location.host || ~location.host.lastIndexOf('.cn') || ~location.host.lastIndexOf('localhost')) {
+    let envmark = 3;
+    if (!location.host || ~location.host.lastIndexOf('127.0.0.1') || ~location.host.lastIndexOf('localhost')) {
         envmark = 2;
     }
 
@@ -34,7 +34,7 @@ const env = (() => {
             }
         },
         {
-            env: 'cloud',
+            env: 'cloud', // 私有
             scope: {
                 3: 1
             }

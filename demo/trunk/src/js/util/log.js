@@ -1,58 +1,121 @@
 import param from 'util/param';
 
-let {debug} = param;
-const DLog = document.createElement('div');
-if (debug) {
-    // $('<div style="word-wrap:break-word;"></div>');
-    DLog.setAttribute('style', 'word-wrap:break-word;');
-    document.body.appendChild(DLog);
-}
+const getDLog = () => {
+    let DLog = document.getElementById('DLog');
+    if (!DLog) {
+            // $('<div style="word-wrap:break-word;"></div>');
+        DLog = document.createElement('div');
+        DLog.setAttribute('style', `
+            word-wrap: break-word;
+            position: fixed;
+            height: 0;
+            width: 0;
+            top:0;
+            left:0;
+            background: rgba(255, 255, 255, 1);
+            overflow: hidden;
+            z-index:1000000;
+        `);
+        DLog.setAttribute('id', 'DLog');
+        document.body.appendChild(DLog);
+        
+        const Dreload = document.createElement('button');
+        Dreload.setAttribute('style', `
+            margin: 0.2rem;
+            height: 0.5rem;
+        `);
+        Dreload.innerHTML = '清除页面刷新缓存';
+        Dreload.onclick = function () {
+            window.location.reload(true);
+        };
+        DLog.appendChild(Dreload);
+
+        const Fixed = document.createElement('div');
+        Fixed.setAttribute('style', `
+            position: fixed;
+            right: 5%;
+            top: 5%;
+            height: 1rem;
+            width: 1rem;
+            background: rgba(253, 189, 0, 0.4);
+            border-radius: 50%;
+            z-index:1000001;
+            border: 1px solid #fff;
+        `);
+
+        Fixed.addEventListener('click', () => {
+            if (DLog.style.overflow === 'hidden') {
+                DLog.style.overflow = 'auto';
+                DLog.style.height = '100%';
+                DLog.style.width = '100%';
+            } else {
+                DLog.style.overflow = 'hidden';
+                DLog.style.height = '0';
+                DLog.style.width = '0';
+            }
+        });
+        document.body.appendChild(Fixed);
+    }
+    return DLog;
+};
+
+const getLogGroup = (id, group) => {
+    let LogGroup = document.getElementById(id);
+    if (!LogGroup) {
+        LogGroup = document.createElement('div');
+        LogGroup.setAttribute('style', `
+            margin: -0.6rem 0.2rem 0.2rem;
+            padding: 0.6rem 0.2rem 0.2rem;
+            border: 1px solid #000;
+        `);
+        LogGroup.id = id;
+
+        const DQc = document.createElement('button');
+        DQc.setAttribute('style', `
+            margin: 0.2rem;
+            height: 0.5rem;
+        `);
+        DQc.innerHTML = `清除'${group}'组内容信息`;
+        DQc.onclick = function () {
+            LogGroup.innerHTML = '';
+        };
+        //
+        getDLog().appendChild(DQc);
+        getDLog().appendChild(LogGroup);
+    }
+    return LogGroup;
+};
 /**
  * [打印数据]
  * @param  {[type]} str   [需要打印的数据]
  * @param  {Number} group [打印数据分组默认为 0]
  * @return {[type]}       [毛都木有返回]
  */
-let logGroup = {};
-let log = (str, group = 0) => {
-     if (debug == 10086 || debug == group) {
-        console.trace(_.cloneDeep(str));
-        if (typeof str !== 'object') {
-            logGroup[group] = logGroup[group] >> 0; // 当前编号
-            let _group = ++logGroup[group];
-            let _id = `Log-${group}`;
-            str = `${_group}----${str}<hr>`;
-            /** 创建组-------------go------------ */
-            if (_group == 1) {
-                let _div = document.createElement('div');
-                _div.id = _id;
-                // 清除按钮
-                let DQc = document.createElement('button');
-                DQc.innerHTML = `清除'${group}'组内容信息`;
-                DQc.onclick = function (event) {
-                    _div.innerHTML = '';
-                };
-                //
-                DLog.appendChild(DQc);
-                DLog.appendChild(_div);
-            }
-            /** 创建组-------------end----------- */
-
-            let _p = document.createElement('p');
-            _p.innerHTML = str;
-            document.getElementById(_id).appendChild(_p);
+const logGroup = {};
+const log = (str, group = 0, show = false) => {
+    if (param.debug || show) {
+        if (param.console) {
+            console.trace(str);
+        } else {
+            console.log(str);
         }
+        logGroup[group] = logGroup[group] >> 0; // 当前编号
+        const _group = ++logGroup[group];
+        const DLogGroup = getLogGroup(`Log-${group}`, group);
+        const _p = document.createElement('p');
+        _p.innerHTML = `${_group}----${JSON.stringify(str)}<hr>`;
+        DLogGroup.appendChild(_p);
     }
 };
 
 log.group = (name) => {
-    if (debug) {
+    if (param.debug) {
         console.group(name);
     }
 };
 
 log.groupEnd = () => {
-    if (debug) {
+    if (param.debug) {
         console.groupEnd();
     }
 };

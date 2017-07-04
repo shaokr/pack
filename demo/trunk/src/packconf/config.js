@@ -1,4 +1,4 @@
-// const _ = require('lodash');
+const _ = require('lodash');
 const fs = require('fs');
 const paths = require('path');
 
@@ -18,7 +18,7 @@ function Copy(path, build) {
     if (!fs.existsSync(_pa)) {
         _data.push({ context: 'node_modules/systemjs/dist', from: '*', to: 'systemjs' });
     }
-    _data.push({ context: `${path}/js/config/lang`, from: '**', to: 'lang' });
+    _data.push({ context: `${path}/js/lang/data`, from: '**', to: 'lang' });
 
     return new CopyWebpackPlugin(_data);
 }
@@ -35,15 +35,12 @@ function Last({ data, build, path, userConfig, packPath }) {
     /**
      * 多项目情况-----------------------------------------
      * */
-    // let entry = [
+    // const entry = {};
+    // _.forEach([
     //     'main',
-    // ];
-    // _.map(entry,(item) => {
-    //     return {
-    //         [item]: data.entry[item]
-    //     }
-    // });
-    // data.entry = {...entry};
+    //     'config'
+    // ], (item) => entry[item] = data.entry[item]);
+    // data.entry = entry;
 
     // data.resolve.modules.push(...userConfig.modules)
     /**

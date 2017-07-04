@@ -7,7 +7,7 @@ import ReactDOM from 'react-dom';
 
 import AppMain from 'component';
 
-import store from 'mobx/store-main';
-import lang from 'mobx/lang';
+import store from 'mobx-data';
+import lang from 'config/lang';
 
 ReactDOM.render(<AppMain {...store} lang={lang} />, document.getElementById('app-main'));

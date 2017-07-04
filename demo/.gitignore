@@ -3,3 +3,8 @@
 node_modules
 dist
 .idea/
+
+trunk/doc/*
+!trunk/doc/*.zip
+!trunk/doc/*.rar
+!trunk/doc/*.7z
