@@ -4,6 +4,8 @@ const webpack = require('webpack');
 const _ = require('lodash');
 const glob = require('glob');
 const paths = require('path');
+const fs = require('fs');
+// const LodashModuleReplacementPlugin = require('lodash-webpack-plugin');
 
 const userConfig = require('./gulp-config');
 const autoprefixer = require('autoprefixer')({ browsers: userConfig.browsers });
@@ -12,15 +14,23 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const md5File = require('md5-file');
-
+// const AppCachePlugin = require('appcache-webpack-plugin');
+const {sep} = paths;
 /**
  * 共用打包配置构造函数
  */
 class WebpackGe {
     constructor({ path }) {
-        this.entry = {};
+        
+        const entryArr = glob.sync(`${path}/${userConfig.src.js}/**/*.js`);
+        const _entry = {};
+        for (const item of entryArr) {
+            const _name = item.match(/entry[\/\\](.+).js/)[1];
+            _entry[_name] = item;
+        }
+
+        this.entry = _entry;
         this.output = {
-            filename: '[name].js',
             // path: `${__dirname}/${userConfig.dist.build}`
             publicPath: './'
         };
@@ -35,7 +45,8 @@ class WebpackGe {
             mobx: 'mobx',
             'mobx-react': 'mobxReact',
             'mobx-react-devtools': 'mobxDevtools',
-            'mock': 'Mock'
+            'mock': 'Mock',
+            'fed-const': 'fedConst'
         };
         this.resolve = {
             modules: [
@@ -51,172 +62,227 @@ class WebpackGe {
             // require('precss'),
             // autoprefixer({ browsers: ['> 1%', 'last 5 versions'] })
         ];
+        // this.stats = 'normal';
     }
 }
+
+
 /**
  * 打包配置
  */
-const wkcf = {
-    module: {
-        rules: [
-            {
-                test: /\.(js|jsx)$/i,
-                exclude: /node_modules/,
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        presets: [
-                            'es2015',
-                            'stage-0',
-                            'react'
-                        ],
-                        plugins: [
-                            // 'react-hot-loader/babel',
-                            'transform-runtime',
-                            'transform-es2015-typeof-symbol',
-                            'transform-decorators-legacy',
-                            'lodash'
-                        ]
-                    }
-                }
-            },
-            {
-                test: /\.less$/,
-                exclude: /node_modules/,
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style-loader',
-                    use: [
-                        'css-loader?sourceMap',
-                        {
-                            loader: 'postcss-loader',
-                            options: {
-                                plugins: [
-                                    autoprefixer
-                                ]
-                            }
-                        },
-                        'less-loader?sourceMap'
-                    ],
-                    allChunks: true
-                })
-            },
-            {
-                test: /\.(jpe?g|png|gif|svg)$/i,
-                use: [`url-loader?limit=1&name=${userConfig.dist.img}/[hash].[ext]`]
-            }
-        ]
-    },
-    devtool: 'inline-source-map',
-    plugins: [
-        // new webpack.HotModuleReplacementPlugin(),
-        new webpack.DefinePlugin({
-            __DEV__: true,
-            __PRE__: false,
-            __BUILD_EXT__: '""'
-        }),
-        new ExtractTextPlugin('[name].css')
+class Wkcf extends WebpackGe {
+    constructor(props){
+        super(props);
+        const { path } = props;
 
-    ]
-};
-
-/**
- * build打包配置
- */
-const wkcfBuild = {
-    module: {
-        loaders: [
-            {
-                test: /\.(js|jsx)$/i,
-                exclude: /node_modules/,
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        presets: [
-                            'es2015',
-                            'stage-0',
-                            'react'
-                        ],
-                        plugins: [
-                            // "react-hot-loader/babel",
-                            'transform-runtime',
-                            'transform-es2015-typeof-symbol',
-                            'transform-decorators-legacy',
-                            'lodash'
-                        ]
+        this.module = {
+            rules: [
+                {
+                    test: /\.(js|jsx)$/i,
+                    exclude: /node_modules/,
+                    use: {
+                        loader: 'babel-loader',
+                        options: {
+                            presets: [
+                                // 'es2017',
+                                ['env', {
+                                    'targets': {
+                                        ie: 10,
+                                        'browsers': userConfig.browsers
+                                    }
+                                }],
+                                'react',
+                                'stage-0'
+                            ],
+                            plugins: [
+                                'lodash',
+                                'transform-decorators-legacy',
+                                'transform-class-properties',
+                                'transform-runtime',
+                            ]
+                        }
                     }
+                },
+                {
+                    test: /\.less$/,
+                    exclude: /node_modules/,
+                    use: ExtractTextPlugin.extract({
+                        fallback: 'style-loader',
+                        use: [
+                            'css-loader?sourceMap',
+                            {
+                                loader: 'postcss-loader',
+                                options: {
+                                    plugins: [
+                                        autoprefixer
+                                    ]
+                                }
+                            },
+                            'less-loader?sourceMap'
+                        ],
+                        allChunks: true
+                    })
+                },
+                {
+                    test: /\.(jpe?g|png|gif|svg|ico)$/i,
+                    use: [`url-loader?limit=1&name=${userConfig.dist.img}/[hash].[ext]`]
+                },
+                {
+                    test: /\.(woff|woff2|eot|ttf|otf)$/,
+                    use: [`url-loader?name=font/[hash].[ext]`]
                 }
-            },
-            {
-                test: /\.less$/,
-                exclude: /node_modules/,
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style-loader',
-                    use: [
-                        {
-                            loader: 'css-loader',
-                            options: {
-                                minimize: true //css压缩
-                            }
-                        },
-                        {
-                            loader: 'postcss-loader',
-                            options: {
-                                plugins: [
-                                    autoprefixer
-                                ]
-                            }
-                        },
-                        'less-loader'
-                    ],
-                    allChunks: true
-                })
-            },
-            {
-                test: /\.(jpe?g|png|gif|svg)$/i,
-                use: [
-                    `url-loader?limit=10000&name=${userConfig.dist.img}/[hash].[ext]`,
-                    'image-webpack-loader?bypassOnDebug&optimizationLevel=7&interlaced=true'
-                ]
-            }
+            ]
+        };
+
+        this.devtool = 'inline-source-map';
+
+        _.assign(this.output,{
+            filename: '[name].js',
+            path: paths.resolve(path, '../dist')
+        });
+
+        this.plugins = [
+            ...this.plugins,
+            // new webpack.HotModuleReplacementPlugin(),
+            new webpack.DefinePlugin({
+                __DEV__: true,
+                __PRE__: false,
+                __BUILD_EXT__: '""'
+            }),
+            new ExtractTextPlugin('[name].css'),
+            ...generateHtml(path, {
+                configJs: './config.js',
+                minName: ''
+            })
         ]
-    },
-    plugins: [
-        new webpack.LoaderOptionsPlugin({
-            minimize: true,
-            debug: false
-        }),
-        new webpack.DefinePlugin({
-            __DEV__: false,
-            __PRE__: true,
-            __BUILD_EXT__: '".min"'
-        }),
-        new webpack.optimize.DedupePlugin(),
-        // new webpack.optimize.OccurenceOrderPlugin(),
-        new webpack.optimize.UglifyJsPlugin({
-            mangle: {
-                except: ['jQuery']
-            }
-        }),
-        new ExtractTextPlugin('[name].min.css')
-    ]
-};
+    }
+}
+
+class WkcfBuild extends WebpackGe{
+    constructor(props){
+        super(props);
+
+        const { path } = props;
+        this.module = {
+            rules: [
+                {
+                    test: /\.(js|jsx)$/i,
+                    exclude: /node_modules/,
+                    use: {
+                        loader: 'babel-loader',
+                        options: {
+                            presets: [
+                                'es2015',
+                                'stage-0',
+                                'react'
+                            ],
+                            plugins: [
+                                // "react-hot-loader/babel",
+                                'transform-runtime',
+                                'transform-es2015-typeof-symbol',
+                                'transform-decorators-legacy',
+                                'lodash'
+                            ]
+                        }
+                    }
+                },
+                {
+                    test: /\.less$/,
+                    exclude: /node_modules/,
+                    use: ExtractTextPlugin.extract({
+                        fallback: 'style-loader',
+                        use: [
+                            {
+                                loader: 'css-loader',
+                                options:{
+                                    minimize: true //css压缩
+                                }
+                            },
+                            {
+                                loader: 'postcss-loader',
+                                options: {
+                                    plugins: [
+                                        autoprefixer
+                                    ]
+                                }
+                            },
+                            'less-loader'
+                        ],
+                        allChunks: true
+                    })
+                },
+                {
+                    test: /\.(jpe?g|png|gif|svg|ico)$/i,
+                    use: [
+                        `url-loader?limit=10000&name=${userConfig.dist.img}/[hash].[ext]`,
+                        'image-webpack-loader?bypassOnDebug&optimizationLevel=7&interlaced=true'
+                    ]
+                },
+                {
+                    test: /\.(woff|woff2|eot|ttf|otf)$/,
+                    use: [`url-loader?limit=500000&name=font/[hash].[ext]`]
+                }
+            ]
+        }
+
+        _.assign(this.output,{
+            filename: '[name].min.js',
+            path: paths.resolve(path, '../dist/min')
+        });
+
+        this.plugins = [
+            ...this.plugins,
+
+            new webpack.LoaderOptionsPlugin({
+                minimize: true,
+                debug: false
+            }),
+
+            new webpack.DefinePlugin({
+                __DEV__: false,
+                __PRE__: true,
+                __BUILD_EXT__: '".min"'
+            }),
+
+            new webpack.optimize.UglifyJsPlugin({
+                mangle: {
+                    except: ['jQuery']
+                }
+            }),
+
+            new webpack.optimize.DedupePlugin(),
+            // new webpack.optimize.OccurenceOrderPlugin(),
+            new ExtractTextPlugin('[name].min.css'),
+            ...generateHtml(path, {
+                configJs: './config.min.js',
+                minName: '.min'
+            },true)
+        ]
+    }
+}
 /**
  * 生成html
  */
 const oldHtmlMd5 = {};
 const generateHtml = (path, data={}, build) => {
-    let lists = glob.sync(`${path }/${userConfig.src.html }/*.html`);
-    // 过滤掉没有改变的html
-    // lists = _.filter(lists, (item) => {
-    //     const htmlMd5 = md5File(item);
-    //     if (oldHtmlMd5[item + build] != htmlMd5) {
-    //         oldHtmlMd5[item + build] = htmlMd5;
-    //         return true;
-    //     }
-    // });
+    let lists = glob.sync(`${path}/${userConfig.src.js}/**/*.html`);
+    if(build){
+        if(!lists.length){
+            lists = glob.sync(`${path}/${userConfig.src.html}/**/*.html`);
+        }
+    } else {
+        lists = _.concat([], glob.sync(`${path}/${userConfig.src.html}/**/*.html`), lists)
+    }
 
     return lists.map((item) => {
-        const name = item.split(userConfig.src.html)[1];
+        const itemData = paths.resolve(item);
+        const jsPath = paths.resolve(path, userConfig.src.js);
+        let name = itemData.split(jsPath)[1];
+        if(!name){
+            const htmlPath = paths.resolve(path, userConfig.src.html);
+            name = itemData.split(htmlPath)[1];
+        }
+
         return new HtmlWebpackPlugin(
             _.assign({
                 // 根据模板插入css/js等生成最终HTML
@@ -247,53 +313,52 @@ const assignRecursion = (object, ...sources) => {
     }
     return object;
 };
+
+function function_name(env) {
+    let { path = '', dev = false } = env;
+    if (path){
+        if (!path.match(/src[\/\\]?$/)) {
+            path = glob.sync(`${path}/**{!node_modules,/${userConfig.src.path}}`)[0];
+        }
+
+        if (path) {
+            const data = {
+                path
+            }
+            let ThisWebpack;
+            if(dev){
+                ThisWebpack = Wkcf;
+            } else {
+                ThisWebpack = WkcfBuild;
+            }
+            let _webpackConfig;
+            _.forEach(userConfig.src.packconf, (item) => {
+                const ItemConfigName = `${path}/${item}`;
+                if (fs.existsSync(ItemConfigName)) {
+                    const ItemConfig = require(ItemConfigName);
+                    delete require.cache[require.resolve(ItemConfigName)];
+                    _webpackConfig = ItemConfig({
+                        data: new ThisWebpack(data),
+                        build: true,
+                        path: data.path,
+                        userConfig,
+                        packPath: paths.resolve()
+                    });
+                    return false;
+                }
+            });
+
+            return _webpackConfig || new ThisWebpack(data);
+        }
+    }
+    console.log('编译地址错误');
+}
 /**
  * 查询打包配置
  */
-const getPackPlugins = ({ path, entry }) => {
-    let _webpack = new WebpackGe({ path });
-    _webpack = assignRecursion(_webpack, wkcf, {
-        entry,
-        // entry: _.mapValues(entry, item => [
-        //     item
-        //         // 'webpack-hot-middleware/client?reload=true'
-        // ]),
-        output: {
-            path: paths.resolve(path, '../dist')
-        },
-        plugins: [
-            ...wkcf.plugins,
-            ...generateHtml(path, {
-                configJs: './config.js',
-                minName: ''
-            })
-        ]
-
-    });
-    return _webpack;
-};
+function_name.getPackPlugins = (data) => new Wkcf(data);
 /**
  * 查询build配置
  */
-const getPackPluginsBuild = ({ path, entry }) => {
-    let _webpack = new WebpackGe({ path });
-    _webpack = assignRecursion(_webpack, wkcfBuild, {
-        entry,
-        output: {
-            filename: '[name].min.js'
-        },
-        plugins: [
-            ...wkcfBuild.plugins,
-            ...generateHtml(path, {
-                configJs: './config.min.js',
-                minName: '.min'
-            },true)
-        ]
-    });
-    return _webpack;
-};
-module.exports = {
-    getPackPlugins,
-    getPackPluginsBuild
-};
- 
+function_name.getPackPluginsBuild = (data) => new WkcfBuild(data);
+module.exports = function_name;
