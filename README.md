@@ -1,3 +1,4 @@
+# 移动到新项目： https://github.com/shaokr/skr-scaffold
 # 前端打包构建工具
 
 ## 功能 
